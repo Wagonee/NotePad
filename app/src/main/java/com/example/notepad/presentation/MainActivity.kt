@@ -1,5 +1,6 @@
 package com.example.notepad.presentation
 
+import CreateNoteScreen
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -15,16 +16,17 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             NotePadTheme {
-                NotesScreen(
-                    modifier = Modifier,
-                    onNoteClick = {
-                        Log.d("NotesScreen", "On note clicked")
-
-                    },
-                    onFloatingButtonClick = {
-                        Log.d("NotesScreen", "On floating button clicked")
-
-                    })
+                CreateNoteScreen()
+//                NotesScreen(
+//                    modifier = Modifier,
+//                    onNoteClick = {
+//                        Log.d("NotesScreen", "On note clicked")
+//
+//                    },
+//                    onFloatingButtonClick = {
+//                        Log.d("NotesScreen", "On floating button clicked")
+//
+//                    })
             }
         }
     }
