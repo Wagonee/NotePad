@@ -1,7 +1,5 @@
 package com.example.notepad.presentation.screens.notes
 
-
-import android.R
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,10 +9,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -37,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,132 +48,199 @@ import com.example.notepad.presentation.utils.DateFormatter
 
 @Composable
 fun NotesScreen(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     viewModel: NotesViewModel = viewModel(),
     onNoteClick: (Note) -> Unit,
     onFloatingButtonClick: () -> Unit
 ) {
     val currentState by viewModel.state.collectAsState()
-    val notesIsAdded = currentState.pinnedNotes.isNotEmpty() && currentState.otherNotes.isNotEmpty()
+
+    val hasAnyNotes = currentState.pinnedNotes.isNotEmpty() || currentState.otherNotes.isNotEmpty()
+    val isSearching = currentState.query.isNotEmpty()
+
+    val pinnedFiltered = currentState.pinnedNotes
+    val otherFiltered = currentState.otherNotes
+
+    val searchReturnedNothing = isSearching && pinnedFiltered.isEmpty() && otherFiltered.isEmpty()
+
     Scaffold(
-        modifier = Modifier,
+        modifier = modifier,
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    onFloatingButtonClick()
-                },
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+                onClick = onFloatingButtonClick,
                 containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = CircleShape
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Button for adding note"
+                    contentDescription = "Add new note"
                 )
             }
-        }) { innerPadding ->
-        LazyColumn(
-            contentPadding = innerPadding,
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
         ) {
-            item {
-                Title(
-                    modifier = Modifier.padding(horizontal = 24.dp),
-                    text = "All Notes"
+            if (!hasAnyNotes && !isSearching) {
+                EmptyStateMessage(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 32.dp),
+                    text = "The notes list is empty.\nAdd one!"
                 )
-            }
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-            item {
-                SearchBar(
-                    modifier = Modifier.padding(horizontal = 24.dp),
-                    query = currentState.query,
-                ) { viewModel.processCommand(NotesCommand.InputSearchQuery(it)) }
-                if (currentState.pinnedNotes.isEmpty() && currentState.otherNotes.isEmpty() && currentState.query.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(96.dp))
-                    MessageToAdd(modifier = Modifier.padding(horizontal = 48.dp),text = "Add note before search.")
-                }
+                return@Scaffold
             }
 
-            if (notesIsAdded) {
+            if (searchReturnedNothing) {
+                EmptyStateMessage(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 32.dp),
+                    text = "For query: '${currentState.query}' nothing find.\nPlease, try another."
+                )
+                return@Scaffold
+            }
 
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(vertical = 16.dp)
+            ) {
                 item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-
-                item {
-                    Subtitle(
-                        modifier = Modifier.padding(horizontal = 24.dp), text = "Pinned"
+                    Text(
+                        modifier = Modifier
+                            .padding(horizontal = 24.dp)
+                            .fillMaxWidth(),
+                        text = "All Notes",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
-            }
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-            item {
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    itemsIndexed(currentState.pinnedNotes, { _, note -> note.id }) { index, note ->
+
+                item { Spacer(modifier = Modifier.height(16.dp)) }
+
+                item {
+                    TextField(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                shape = RoundedCornerShape(10.dp)
+                            ),
+                        value = currentState.query,
+                        onValueChange = { viewModel.processCommand(NotesCommand.InputSearchQuery(it)) },
+                        placeholder = {
+                            Text(
+                                text = "Search...",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search note",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+
+                if (pinnedFiltered.isNotEmpty()) {
+                    item { Spacer(modifier = Modifier.height(24.dp)) }
+                    item {
+                        Text(
+                            modifier = Modifier
+                                .padding(horizontal = 24.dp)
+                                .fillMaxWidth(),
+                            text = "Pinned",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                    item { Spacer(modifier = Modifier.height(16.dp)) }
+
+                    item {
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 24.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            itemsIndexed(
+                                items = pinnedFiltered,
+                                key = { _, note -> note.id }
+                            ) { index, note ->
+                                NoteCard(
+                                    note = note,
+                                    backgroundColor = PinnedNotesColors[index % PinnedNotesColors.size],
+                                    onNoteClick = onNoteClick,
+                                    onLongClick = {
+                                        viewModel.processCommand(
+                                            NotesCommand.SwitchPinnedStatus(
+                                                it.id
+                                            )
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (otherFiltered.isNotEmpty()) {
+                    item { Spacer(modifier = Modifier.height(24.dp)) }
+
+                    if (pinnedFiltered.isNotEmpty()) {
+                        item {
+                            Text(
+                                modifier = Modifier
+                                    .padding(horizontal = 24.dp)
+                                    .fillMaxWidth(),
+                                text = "Others",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+                        item { Spacer(modifier = Modifier.height(16.dp)) }
+                    }
+
+                    itemsIndexed(
+                        items = otherFiltered,
+                        key = { _, note -> note.id }
+                    ) { index, note ->
                         NoteCard(
-                            modifier = Modifier.widthIn(max = 160.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp),
                             note = note,
-                            onNoteClick = {
-                                onNoteClick
-                            },
+                            backgroundColor = OtherNotesColors[index % OtherNotesColors.size],
+                            onNoteClick = onNoteClick,
                             onLongClick = {
                                 viewModel.processCommand(
                                     NotesCommand.SwitchPinnedStatus(
                                         it.id
                                     )
                                 )
-                            },
-                            backgroundColor = PinnedNotesColors[index % PinnedNotesColors.size]
+                            }
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
-            if (notesIsAdded) {
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-                item { Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = "Others") }
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-            } else if (currentState.query.isEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(96.dp))
-                    MessageToAdd(modifier = Modifier.padding(horizontal = 48.dp),text = "Add your first note!")
-                }
-            }
-
-            itemsIndexed(currentState.otherNotes, { _, note -> note.id }) { index, note ->
-                NoteCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
-                    note = note,
-
-                    onNoteClick = {
-                        onNoteClick(note)
-                    },
-                    onLongClick = { viewModel.processCommand(NotesCommand.SwitchPinnedStatus(it.id)) },
-                    backgroundColor = OtherNotesColors[index % OtherNotesColors.size]
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-
         }
     }
-    // val currentState = state.value
-    // val scrollState = remember { ScrollState(0) }
-
-
 }
 
 
@@ -194,12 +258,8 @@ fun NoteCard(
             .clip(RoundedCornerShape(16.dp))
             .background(backgroundColor)
             .combinedClickable(
-                onClick = {
-                    onNoteClick(note)
-                },
-                onLongClick = {
-                    onLongClick(note)
-                }
+                onClick = { onNoteClick(note) },
+                onLongClick = { onLongClick(note) }
             )
             .padding(16.dp)
     ) {
@@ -225,94 +285,24 @@ fun NoteCard(
             color = MaterialTheme.colorScheme.onSurface,
             overflow = TextOverflow.Ellipsis
         )
-
     }
-
 }
 
-@Composable
-private fun Title(
-    modifier: Modifier = Modifier,
-    text: String
-) {
-    Text(
-        modifier = modifier,
-        text = text,
-        fontWeight = FontWeight.Bold,
-        fontSize = 24.sp,
-        color = MaterialTheme.colorScheme.onSurface
-    )
-}
 
 @Composable
-private fun SearchBar(
-    modifier: Modifier = Modifier,
-    query: String,
-    onQueryChange: (String) -> Unit
-) {
-    TextField(
-        modifier = modifier
-            .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                shape = RoundedCornerShape(10.dp)
-            ),
-
-        value = query,
-        onValueChange = onQueryChange,
-        placeholder = {
-            Text(
-                text = "Search...",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        },
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = MaterialTheme.colorScheme.surface,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent
-        ),
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Search bar.",
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-        },
-        shape = RoundedCornerShape(10.dp)
-    )
-}
-
-@Composable
-private fun Subtitle(
-    modifier: Modifier = Modifier,
-    text: String
-) {
-    Text(
-        modifier = modifier,
-        text = text,
-        fontWeight = FontWeight.Bold,
-        fontSize = 14.sp
-    )
-}
-
-@Composable
-private fun MessageToAdd(
+private fun EmptyStateMessage(
     modifier: Modifier = Modifier,
     text: String
 ) {
     Box(
         modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp),
+            .fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
             textAlign = TextAlign.Center,
-            fontSize = 24.sp,
+            fontSize = 20.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Medium
         )

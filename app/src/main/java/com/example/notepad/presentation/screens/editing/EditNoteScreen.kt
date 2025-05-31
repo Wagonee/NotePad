@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,31 +27,36 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.notepad.presentation.screens.creation.CreateNoteCommand
-import com.example.notepad.presentation.screens.creation.CreateNoteState
-import com.example.notepad.presentation.screens.creation.CreateNoteViewModel
+import com.example.notepad.presentation.screens.editing.EditNoteCommand
+import com.example.notepad.presentation.screens.editing.EditNoteState
+import com.example.notepad.presentation.screens.editing.EditNoteViewModel
 import com.example.notepad.presentation.utils.DateFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateNoteScreen(
+fun EditNoteScreen(
     modifier: Modifier = Modifier,
-    viewModel: CreateNoteViewModel = viewModel(),
+    noteId: Int,
+    viewModel: EditNoteViewModel = viewModel {
+        EditNoteViewModel(noteId)
+    },
     onFinished: () -> Unit
 ) {
+
+
     val state = viewModel.state.collectAsState()
     val currentState = state.value
 
     when (currentState) {
 
-        is CreateNoteState.Creation -> {
+        is EditNoteState.Editing -> {
             Scaffold(
                 modifier = modifier,
                 topBar = {
                     TopAppBar(
                         title = {
                             Text(
-                                text = "Create Note",
+                                text = "Edit Note",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground
@@ -61,12 +67,23 @@ fun CreateNoteScreen(
                             containerColor = Color.Transparent,
                             navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                         ),
+                        actions = {
+                            Icon(
+                                modifier = Modifier
+                                    .padding(end = 8.dp)
+                                    .clickable {
+                                        viewModel.processCommand(EditNoteCommand.Delete)
+                                    },
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete note"
+                            )
+                        },
                         navigationIcon = {
                             Icon(
                                 modifier = Modifier
                                     .padding(start = 16.dp, end = 8.dp)
                                     .clickable {
-                                        viewModel.processCommand(CreateNoteCommand.Back)
+                                        viewModel.processCommand(EditNoteCommand.Back)
                                     },
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back arrow"
@@ -81,8 +98,8 @@ fun CreateNoteScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 8.dp),
-                        value = currentState.title,
-                        onValueChange = { viewModel.processCommand(CreateNoteCommand.InputTitle(it)) },
+                        value = currentState.note.title,
+                        onValueChange = { viewModel.processCommand(EditNoteCommand.InputTitle(it)) },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
@@ -103,7 +120,7 @@ fun CreateNoteScreen(
                     )
                     Text(
                         modifier = Modifier.padding(horizontal = 24.dp),
-                        text = DateFormatter.formatCurrentDate(),
+                        text = DateFormatter.formatDateToString(currentState.note.updatedAt),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -112,8 +129,8 @@ fun CreateNoteScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 8.dp)
                             .weight(1f),
-                        value = currentState.content,
-                        onValueChange = { viewModel.processCommand(CreateNoteCommand.InputContent(it)) },
+                        value = currentState.note.content,
+                        onValueChange = { viewModel.processCommand(EditNoteCommand.InputContent(it)) },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
@@ -137,7 +154,7 @@ fun CreateNoteScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 24.dp),
                         onClick = {
-                            viewModel.processCommand(CreateNoteCommand.Save)
+                            viewModel.processCommand(EditNoteCommand.Save)
                         },
                         shape = RoundedCornerShape(10.dp),
                         enabled = currentState.isSaveEnabled,
@@ -155,11 +172,13 @@ fun CreateNoteScreen(
             }
         }
 
-        CreateNoteState.Finished -> {
+        EditNoteState.Finished -> {
             LaunchedEffect(Unit) {
                 onFinished()
             }
 
         }
+
+        EditNoteState.Initial -> {}
     }
 }
