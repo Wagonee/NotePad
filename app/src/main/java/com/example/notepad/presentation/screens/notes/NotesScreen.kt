@@ -1,11 +1,13 @@
 package com.example.notepad.presentation.screens.notes
 
 
+import android.R
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -31,10 +33,13 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,7 +57,7 @@ fun NotesScreen(
     onFloatingButtonClick: () -> Unit
 ) {
     val currentState by viewModel.state.collectAsState()
-
+    val notesIsAdded = currentState.pinnedNotes.isNotEmpty() && currentState.otherNotes.isNotEmpty()
     Scaffold(
         modifier = Modifier,
         floatingActionButton = {
@@ -87,15 +92,23 @@ fun NotesScreen(
                     modifier = Modifier.padding(horizontal = 24.dp),
                     query = currentState.query,
                 ) { viewModel.processCommand(NotesCommand.InputSearchQuery(it)) }
-            }
-            item {
-                Spacer(modifier = Modifier.height(24.dp))
+                if (currentState.pinnedNotes.isEmpty() && currentState.otherNotes.isEmpty() && currentState.query.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(96.dp))
+                    MessageToAdd(modifier = Modifier.padding(horizontal = 48.dp),text = "Add note before search.")
+                }
             }
 
-            item {
-                Subtitle(
-                    modifier = Modifier.padding(horizontal = 24.dp), text = "Pinned"
-                )
+            if (notesIsAdded) {
+
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+
+                item {
+                    Subtitle(
+                        modifier = Modifier.padding(horizontal = 24.dp), text = "Pinned"
+                    )
+                }
             }
             item {
                 Spacer(modifier = Modifier.height(16.dp))
@@ -126,13 +139,21 @@ fun NotesScreen(
                     }
                 }
             }
-            item {
-                Spacer(modifier = Modifier.height(24.dp))
+            if (notesIsAdded) {
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+                item { Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = "Others") }
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            } else if (currentState.query.isEmpty()) {
+                item {
+                    Spacer(modifier = Modifier.height(96.dp))
+                    MessageToAdd(modifier = Modifier.padding(horizontal = 48.dp),text = "Add your first note!")
+                }
             }
-            item { Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = "Others") }
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+
             itemsIndexed(currentState.otherNotes, { _, note -> note.id }) { index, note ->
                 NoteCard(
                     modifier = Modifier
@@ -157,7 +178,6 @@ fun NotesScreen(
 
 
 }
-
 
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -276,4 +296,25 @@ private fun Subtitle(
         fontWeight = FontWeight.Bold,
         fontSize = 14.sp
     )
+}
+
+@Composable
+private fun MessageToAdd(
+    modifier: Modifier = Modifier,
+    text: String
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            textAlign = TextAlign.Center,
+            fontSize = 24.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium
+        )
+    }
 }
