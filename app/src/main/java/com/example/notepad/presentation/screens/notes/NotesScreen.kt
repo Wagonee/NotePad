@@ -101,7 +101,6 @@ fun NotesScreen(
                         .padding(horizontal = 32.dp),
                     text = "For query: '${currentState.query}' nothing find.\nPlease, try another."
                 )
-                return@Scaffold
             }
 
             LazyColumn(

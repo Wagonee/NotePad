@@ -1,5 +1,6 @@
 package com.example.notepad.domain
 
+
 data class Note(
     val id: Int,
     val title: String,
