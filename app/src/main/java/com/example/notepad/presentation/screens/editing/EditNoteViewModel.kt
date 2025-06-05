@@ -1,7 +1,9 @@
 package com.example.notepad.presentation.screens.editing
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.notepad.data.NotesRepositoryImpl
 import com.example.notepad.data.TestNotesRepositoryImpl
 import com.example.notepad.domain.DeleteNoteUseCase
 import com.example.notepad.domain.EditNoteUseCase
@@ -12,8 +14,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class EditNoteViewModel(private val noteId: Int) : ViewModel() {
-    private val repository = TestNotesRepositoryImpl
+class EditNoteViewModel(private val noteId: Int, context: Context) : ViewModel() {
+    private val repository = NotesRepositoryImpl.getInstance(context)
     private val _state = MutableStateFlow<EditNoteState>(EditNoteState.Initial)
     val state = _state.asStateFlow()
 

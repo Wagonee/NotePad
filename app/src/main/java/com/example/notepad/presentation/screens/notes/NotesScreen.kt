@@ -1,5 +1,6 @@
 package com.example.notepad.presentation.screens.notes
 
+import android.content.Context
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -50,7 +51,10 @@ import com.example.notepad.presentation.utils.DateFormatter
 @Composable
 fun NotesScreen(
     modifier: Modifier = Modifier,
-    viewModel: NotesViewModel = viewModel(),
+    context: Context = LocalContext.current.applicationContext,
+    viewModel: NotesViewModel = viewModel {
+        NotesViewModel(context)
+    },
     onNoteClick: (Note) -> Unit,
     onFloatingButtonClick: () -> Unit
 ) {
